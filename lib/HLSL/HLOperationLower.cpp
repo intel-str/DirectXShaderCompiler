@@ -5072,6 +5072,38 @@ Value *TranslateDot4AddPacked(CallInst *CI, IntrinsicOp IOP, OP::OpCode opcode,
   return Builder.CreateCall(dxilFunc, { opArg, accArg, src0, src1 });
 }
 
+Value *TranslateIntelMediaBlockRead(CallInst *CI, IntrinsicOp IOP, OP::OpCode opcode,
+                              HLOperationLowerHelper &helper,
+                              HLObjectOperationLowerHelper *pObjHelper,
+                              bool &Translated) {
+  hlsl::OP *hlslOP = &helper.hlslOP;
+  Value *src0 = CI->getArgOperand(1);
+
+
+  /*DXASSERT(
+      src0->getType()->isVectorTy() && src0->getType()->isFloatingPointTy(),
+      "otherwise, mismatched argument type");*/
+
+  /*Value *refArgs[] = {nullptr, src0};
+  return TrivialDxilOperation(DXIL::OpCode::FAbs, refArgs, CI->getType(), CI,
+                             hlslOP);*/
+  Type *T = src0->getType();
+
+  IRBuilder<> Builder(CI);
+  Function *dxilFunc = hlslOP->GetOpFunc(opcode, T);
+  Constant *opArg = hlslOP->GetU32Const((unsigned)opcode);
+  return Builder.CreateCall(dxilFunc, {opArg, src0});
+}
+
+Value *TranslateLaxmanFoo(CallInst *CI, IntrinsicOp IOP, OP::OpCode opcode,
+                              HLOperationLowerHelper &helper,
+                              HLObjectOperationLowerHelper *pObjHelper,
+                              bool &Translated) {
+  Translated = false;
+  CI->getContext().emitError(CI, "Laxman - use of undeclared identifier 'printf'");
+  return nullptr;
+}
+
 } // namespace
 
 // Resource Handle.
@@ -5271,9 +5303,11 @@ IntrinsicLower gLowerTable[] = {
     {IntrinsicOp::IOP_frac, TrivialUnaryOperation, DXIL::OpCode::Frc},
     {IntrinsicOp::IOP_frexp, TranslateFrexp, DXIL::OpCode::NumOpCodes},
     {IntrinsicOp::IOP_fwidth, TranslateFWidth, DXIL::OpCode::NumOpCodes},
+    {IntrinsicOp::IOP_intel_media__block__read__ushort8_scalar, TranslateIntelMediaBlockRead, DXIL::OpCode::IntelMediaBlockRead},
     {IntrinsicOp::IOP_isfinite, TrivialIsSpecialFloat, DXIL::OpCode::IsFinite},
     {IntrinsicOp::IOP_isinf, TrivialIsSpecialFloat, DXIL::OpCode::IsInf},
     {IntrinsicOp::IOP_isnan, TrivialIsSpecialFloat, DXIL::OpCode::IsNaN},
+    {IntrinsicOp::IOP_laxman_foo, TranslateLaxmanFoo, DXIL::OpCode::NumOpCodes},
     {IntrinsicOp::IOP_ldexp, TranslateLdExp, DXIL::OpCode::NumOpCodes},
     {IntrinsicOp::IOP_length, TranslateLength, DXIL::OpCode::NumOpCodes},
     {IntrinsicOp::IOP_lerp, TranslateLerp, DXIL::OpCode::NumOpCodes},
@@ -5454,9 +5488,12 @@ static_assert(sizeof(gLowerTable) / sizeof(gLowerTable[0]) == static_cast<size_t
 static void TranslateBuiltinIntrinsic(CallInst *CI,
                                       HLOperationLowerHelper &helper,  HLObjectOperationLowerHelper *pObjHelper, bool &Translated) {
   unsigned opcode = hlsl::GetHLOpcode(CI);
+  //Translated = false;
+  //return;
   const IntrinsicLower &lower = gLowerTable[opcode];
   Value *Result =
       lower.LowerFunc(CI, lower.IntriOpcode, lower.DxilOpcode, helper, pObjHelper, Translated);
+  Result->dump();
   if (Result)
     CI->replaceAllUsesWith(Result);
 }
@@ -7593,8 +7630,9 @@ void TranslateHLBuiltinOperation(Function *F, HLOperationLowerHelper &helper,
 
       // Keep the instruction to lower by other function.
       bool Translated = true;
-
-      TranslateBuiltinIntrinsic(CI, helper, pObjHelper, Translated);
+      F->dump();
+      CI->dump();
+	  TranslateBuiltinIntrinsic(CI, helper, pObjHelper, Translated);
 
       if (Translated) {
         // delete the call
