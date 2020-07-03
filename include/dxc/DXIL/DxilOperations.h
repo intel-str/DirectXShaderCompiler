@@ -44,6 +44,7 @@ public:
   void RefreshCache();
   void FixOverloadNames();
 
+  llvm::Function *GetIntrinsicFunc(OpCode OpCode, llvm::Type *pOverloadType);
   llvm::Function *GetOpFunc(OpCode OpCode, llvm::Type *pOverloadType);
   const llvm::SmallMapVector<llvm::Type *, llvm::Function *, 8> &GetOpFuncList(OpCode OpCode) const;
   void RemoveFunction(llvm::Function *F);

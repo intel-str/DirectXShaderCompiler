@@ -955,6 +955,13 @@ void OP::UpdateCache(OpCodeClass opClass, Type * Ty, llvm::Function *F) {
   m_FunctionToOpClass[F] = opClass;
 }
 
+Function *OP::GetIntrinsicFunc(OpCode opCode, Type *pOverloadType) {
+  FunctionType *pFT;
+  pFT = FunctionType::get(pOverloadType, ArrayRef<Type *>(&pOverloadType, 1), false);
+  Function *F = cast<Function>(m_pModule->getOrInsertFunction("intrinsic_intel_media_block_read", pFT));
+  return F;
+}
+
 Function *OP::GetOpFunc(OpCode opCode, Type *pOverloadType) {
   DXASSERT(0 <= (unsigned)opCode && opCode < OpCode::NumOpCodes, "otherwise caller passed OOB OpCode");
   _Analysis_assume_(0 <= (unsigned)opCode && opCode < OpCode::NumOpCodes);

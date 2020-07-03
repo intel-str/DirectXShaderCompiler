@@ -5072,6 +5072,19 @@ Value *TranslateDot4AddPacked(CallInst *CI, IntrinsicOp IOP, OP::OpCode opcode,
   return Builder.CreateCall(dxilFunc, { opArg, accArg, src0, src1 });
 }
 
+Value *TranslateIntelMediaBlockRead(CallInst *CI, IntrinsicOp IOP, OP::OpCode opcode,
+                              HLOperationLowerHelper &helper,
+                              HLObjectOperationLowerHelper *pObjHelper,
+                              bool &Translated) {
+  hlsl::OP *hlslOP = &helper.hlslOP;
+  Value *src0 = CI->getArgOperand(1);
+  Type *T = src0->getType();
+
+  IRBuilder<> Builder(CI);
+  Function *dxilFunc = hlslOP->GetIntrinsicFunc(opcode, T);
+  return Builder.CreateCall(dxilFunc, {src0});
+}
+
 } // namespace
 
 // Resource Handle.
@@ -5271,6 +5284,7 @@ IntrinsicLower gLowerTable[] = {
     {IntrinsicOp::IOP_frac, TrivialUnaryOperation, DXIL::OpCode::Frc},
     {IntrinsicOp::IOP_frexp, TranslateFrexp, DXIL::OpCode::NumOpCodes},
     {IntrinsicOp::IOP_fwidth, TranslateFWidth, DXIL::OpCode::NumOpCodes},
+    {IntrinsicOp::IOP_intel_media__block__read__ushort8_scalar, TranslateIntelMediaBlockRead, DXIL::OpCode::NumOpCodes},
     {IntrinsicOp::IOP_isfinite, TrivialIsSpecialFloat, DXIL::OpCode::IsFinite},
     {IntrinsicOp::IOP_isinf, TrivialIsSpecialFloat, DXIL::OpCode::IsInf},
     {IntrinsicOp::IOP_isnan, TrivialIsSpecialFloat, DXIL::OpCode::IsNaN},
