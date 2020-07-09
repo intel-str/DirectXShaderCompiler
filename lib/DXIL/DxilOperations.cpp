@@ -388,6 +388,7 @@ const OP::OpCodeProperty OP::m_OpCodeProps[(unsigned)OP::OpCode::NumOpCodes] = {
   // Get handle from heap                                                                                                    void,     h,     f,     d,    i1,    i8,   i16,   i32,   i64,   udt,   obj ,  function attribute
   {  OC::CreateHandleFromHeap,    "CreateHandleFromHeap",     OCC::CreateHandleFromHeap,     "createHandleFromHeap",      {  true, false, false, false, false, false, false, false, false, false, false}, Attribute::ReadOnly, },
   {  OC::AnnotateHandle,          "AnnotateHandle",           OCC::AnnotateHandle,           "annotateHandle",            {  true, false, false, false, false, false, false, false, false, false, false}, Attribute::ReadNone, },
+
 };
 // OPCODE-OLOADS:END
 
@@ -955,10 +956,10 @@ void OP::UpdateCache(OpCodeClass opClass, Type * Ty, llvm::Function *F) {
   m_FunctionToOpClass[F] = opClass;
 }
 
-Function *OP::GetIntrinsicFunc(OpCode opCode, Type *pOverloadType) {
+Function *OP::GetIntrinsicFunc(std::vector<Type *> pOverloadType, std::string funcName) {
   FunctionType *pFT;
-  pFT = FunctionType::get(pOverloadType, ArrayRef<Type *>(&pOverloadType, 1), false);
-  Function *F = cast<Function>(m_pModule->getOrInsertFunction("intrinsic_intel_media_block_read", pFT));
+  pFT = FunctionType::get(pOverloadType[0], ArrayRef<Type *>(&pOverloadType[1], pOverloadType.size()-1), false);
+  Function *F = cast<Function>(m_pModule->getOrInsertFunction(funcName, pFT));
   return F;
 }
 

@@ -5076,13 +5076,35 @@ Value *TranslateIntelMediaBlockRead(CallInst *CI, IntrinsicOp IOP, OP::OpCode op
                               HLOperationLowerHelper &helper,
                               HLObjectOperationLowerHelper *pObjHelper,
                               bool &Translated) {
+  
+  std::vector<Type *> ArgTypes; // RetType is ArgTypes[0]
+  std::vector<Value *> Args;
+
+  std::string funcName;
+  switch (IOP) {
+  case hlsl::IntrinsicOp::IOP_intel_media__block__read__float16_scalar:
+    funcName = "Intrinsic_intel_media_block_read_float16";
+    break;
+  case hlsl::IntrinsicOp::IOP_intel_media__block__read__ushort8_scalar:
+    funcName = "Intrinsic_intel_media_block_read_ushort8";
+    break;
+  default:
+    funcName = "defaultName";
+    break;
+  }
+
   hlsl::OP *hlslOP = &helper.hlslOP;
-  Value *src0 = CI->getArgOperand(1);
-  Type *T = src0->getType();
+  unsigned numArgs = CI->getNumArgOperands();
+  ArgTypes.emplace_back(CI->getType());
+
+  for (unsigned i = 1; i < numArgs; i++) {
+    ArgTypes.emplace_back(CI->getArgOperand(i)->getType());
+    Args.emplace_back(CI->getArgOperand(i));
+  }
 
   IRBuilder<> Builder(CI);
-  Function *dxilFunc = hlslOP->GetIntrinsicFunc(opcode, T);
-  return Builder.CreateCall(dxilFunc, {src0});
+  Function *dxilFunc = hlslOP->GetIntrinsicFunc(ArgTypes, funcName);
+  return Builder.CreateCall(dxilFunc, Args);
 }
 
 } // namespace
@@ -5284,6 +5306,7 @@ IntrinsicLower gLowerTable[] = {
     {IntrinsicOp::IOP_frac, TrivialUnaryOperation, DXIL::OpCode::Frc},
     {IntrinsicOp::IOP_frexp, TranslateFrexp, DXIL::OpCode::NumOpCodes},
     {IntrinsicOp::IOP_fwidth, TranslateFWidth, DXIL::OpCode::NumOpCodes},
+    {IntrinsicOp::IOP_intel_media__block__read__float16_scalar, TranslateIntelMediaBlockRead, DXIL::OpCode::NumOpCodes},
     {IntrinsicOp::IOP_intel_media__block__read__ushort8_scalar, TranslateIntelMediaBlockRead, DXIL::OpCode::NumOpCodes},
     {IntrinsicOp::IOP_isfinite, TrivialIsSpecialFloat, DXIL::OpCode::IsFinite},
     {IntrinsicOp::IOP_isinf, TrivialIsSpecialFloat, DXIL::OpCode::IsInf},
